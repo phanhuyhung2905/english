@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>English Flashcard App</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(120deg, #d4fc79, #96e6a1);
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 20px;
+    }
+
+    .level-buttons {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .level-button {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      width: 160px;
+      text-align: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .level-button:hover {
+      transform: scale(1.05);
+    }
+
+    .card, .quiz {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      padding: 20px;
+      width: 320px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .word {
+      font-size: 28px;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+
+    .meaning {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .image {
+      font-size: 80px;
+      margin-bottom: 15px;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      background: #3498db;
+      color: white;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .option {
+      background: #ecf0f1;
+      padding: 10px;
+      border-radius: 8px;
+      margin: 8px 0;
+      cursor: pointer;
+    }
+
+    .correct { background-color: #b2f2bb !important; }
+    .wrong { background-color: #ffa8a8 !important; }
+  </style>
+</head>
+<body>
+  <h1>English Vocabulary App</h1>
+
+  <div class="level-buttons">
+    <div class="level-button" onclick="loadLevel('A1')">
+      <h3>A1</h3>
+      <p>⛏ AX<br>🦗 ANT<br>🐊 ALLIGATOR<br>🍎 APPLE</p>
+    </div>
+    <div class="level-button" onclick="loadLevel('B1')">
+      <h3>B1</h3>
+      <p>🍌 BANANA<br>🐻 BEAR<br>🛏️ BED<br>🦜 BIRD</p>
+    </div>
+    <div class="level-button" onclick="loadLevel('C1')">
+      <h3>C1</h3>
+      <p>🚗 CAR<br>🐱 CAT<br>💻 COMPUTER<br>☕ CUP</p>
+    </div>
+    <div class="level-button" onclick="loadLevel('TEST')">
+      <h3>Test 1</h3>
+      <p>Kiểm tra tổng hợp</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="img" class="image"></div>
+    <div class="word" id="word">Word</div>
+    <div class="meaning" id="meaning">Meaning</div>
+    <button onclick="speakWord()">🔊 Pronounce</button>
+    <button onclick="nextWord()">Next</button>
+    <button onclick="addToFavorites()">⭐ Favorite</button>
+  </div>
+
+  <div class="quiz">
+    <h2>Choose the correct meaning:</h2>
+    <div id="options"></div>
+  </div>
+
+  <div class="quiz">
+    <h3>Words you answered incorrectly:</h3>
+    <ul id="wrongList"></ul>
+  </div>
+
+  <div class="quiz">
+    <h3>Your Favorite Words:</h3>
+    <ul id="favoriteList"></ul>
+  </div>
+
+  <script>
+    const levels = {
+      A1: [
+        { word: "AX", meaning: "(cái rìu)", icon: "⛏", phonetic: "" },
+        { word: "ANT", meaning: "(con kiến)", icon: "🦗", phonetic: "" },
+        { word: "ALLIGATOR", meaning: "(con cá sấu)", icon: "🐊", phonetic: "" },
+        { word: "APPLE", meaning: "(quả táo)", icon: "🍎", phonetic: "" }
+      ],
+      B1: [
+        { word: "BANANA", meaning: "(quả chuối)", icon: "🍌", phonetic: "" },
+        { word: "BEAR", meaning: "(con gấu)", icon: "🐻", phonetic: "" },
+        { word: "BED", meaning: "(cái giường)", icon: "🛏️", phonetic: "" },
+        { word: "BIRD", meaning: "(con chim)", icon: "🦜", phonetic: "" }
+      ],
+      C1: [
+        { word: "CAR", meaning: "(xe ô tô)", icon: "🚗", phonetic: "/kɑːr/" },
+        { word: "CAT", meaning: "(con mèo)", icon: "🐱", phonetic: "/kæt/" },
+        { word: "COMPUTER", meaning: "(máy tính)", icon: "💻", phonetic: "/kəmˈpjuːtər/" },
+        { word: "CUP", meaning: "(cái cốc)", icon: "☕", phonetic: "/kʌp/" }
+      ],
+      TEST: [] // Chưa có nội dung kiểm tra cụ thể
+    };
+
+    let vocabulary = levels.C1;
+    let index = 0;
+    let wrongWords = JSON.parse(localStorage.getItem("wrongWords") || "[]");
+    let favoriteWords = JSON.parse(localStorage.getItem("favoriteWords") || "[]");
+
+    function loadLevel(level) {
+      vocabulary = levels[level];
+      index = 0;
+      updateCard();
+    }
+
+    function updateCard() {
+      const item = vocabulary[index];
+      document.getElementById("word").innerText = `${item.word} ${item.phonetic || ''}`;
+      document.getElementById("meaning").innerText = item.meaning;
+      document.getElementById("img").innerText = item.icon;
+      generateQuiz(item);
+    }
+
+    function nextWord() {
+      index = (index + 1) % vocabulary.length;
+      updateCard();
+    }
+
+    function speakWord() {
+      const utter = new SpeechSynthesisUtterance(vocabulary[index].word);
+      utter.lang = "en-US";
+      window.speechSynthesis.speak(utter);
+    }
+
+    function shuffle(arr) {
+      return arr.sort(() => Math.random() - 0.5);
+    }
+
+    function generateQuiz(current) {
+      const optionsDiv = document.getElementById("options");
+      optionsDiv.innerHTML = "";
+      let options = [current.meaning];
+      while (options.length < 4) {
+        const rand = vocabulary[Math.floor(Math.random() * vocabulary.length)].meaning;
+        if (!options.includes(rand)) options.push(rand);
+      }
+      shuffle(options);
+
+      options.forEach(opt => {
+        const div = document.createElement("div");
+        div.className = "option";
+        div.innerText = opt;
+        div.onclick = function () {
+          if (opt === current.meaning) {
+            div.classList.add("correct");
+          } else {
+            div.classList.add("wrong");
+            wrongWords.push(current);
+            localStorage.setItem("wrongWords", JSON.stringify(wrongWords));
+            renderWrongWords();
+          }
+        };
+        optionsDiv.appendChild(div);
+      });
+    }
+
+    function renderWrongWords() {
+      const list = document.getElementById("wrongList");
+      list.innerHTML = "";
+      wrongWords.slice(-5).forEach(item => {
+        const li = document.createElement("li");
+        li.innerText = `${item.word} = ${item.meaning}`;
+        list.appendChild(li);
+      });
+    }
+
+    function addToFavorites() {
+      const current = vocabulary[index];
+      if (!favoriteWords.find(item => item.word === current.word)) {
+        favoriteWords.push(current);
+        localStorage.setItem("favoriteWords", JSON.stringify(favoriteWords));
+        renderFavorites();
+      }
+    }
+
+    function renderFavorites() {
+      const list = document.getElementById("favoriteList");
+      list.innerHTML = "";
+      favoriteWords.slice(-10).forEach(item => {
+        const li = document.createElement("li");
+        li.innerText = `${item.word} = ${item.meaning}`;
+        list.appendChild(li);
+      });
+    }
+
+    updateCard();
+    renderWrongWords();
+    renderFavorites();
+  </script>
+</body>
+</html>
