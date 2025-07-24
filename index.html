@@ -22,6 +22,8 @@
       display: flex;
       gap: 15px;
       margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     .level-button {
@@ -64,7 +66,7 @@
       margin-bottom: 15px;
     }
 
-    button {
+    button, select {
       padding: 10px 20px;
       margin: 5px;
       border: none;
@@ -89,6 +91,9 @@
 <body>
   <h1>English Vocabulary App</h1>
 
+  <label for="voiceSelect">🔊 Chọn giọng đọc:</label>
+  <select id="voiceSelect"></select>
+
   <div class="level-buttons">
     <div class="level-button" onclick="loadLevel('A1')">
       <h3>A1</h3>
@@ -102,9 +107,9 @@
       <h3>C1</h3>
       <p>🚗 CAR<br>🐱 CAT<br>💻 COMPUTER<br>☕ CUP</p>
     </div>
-    <div class="level-button" onclick="loadLevel('TEST')">
-      <h3>Test 1</h3>
-      <p>Kiểm tra tổng hợp</p>
+    <div class="level-button" onclick="loadLevel('D1')">
+      <h3>D1</h3>
+      <p>🪑 DESK<br>🐶 DOG<br>🧸 DOLL<br>🦆 DUCK</p>
     </div>
   </div>
 
@@ -133,6 +138,27 @@
   </div>
 
   <script>
+    const voiceSelect = document.getElementById("voiceSelect");
+    let voices = [];
+    let selectedVoice = null;
+
+    function populateVoices() {
+      voices = speechSynthesis.getVoices();
+      voiceSelect.innerHTML = '';
+      voices.forEach((voice, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `${voice.name} (${voice.lang})`;
+        voiceSelect.appendChild(option);
+      });
+      selectedVoice = voices[0];
+    }
+
+    speechSynthesis.onvoiceschanged = populateVoices;
+    voiceSelect.addEventListener("change", () => {
+      selectedVoice = voices[voiceSelect.value];
+    });
+
     const levels = {
       A1: [
         { word: "AX", meaning: "(cái rìu)", icon: "⛏", phonetic: "" },
@@ -152,7 +178,12 @@
         { word: "COMPUTER", meaning: "(máy tính)", icon: "💻", phonetic: "/kəmˈpjuːtər/" },
         { word: "CUP", meaning: "(cái cốc)", icon: "☕", phonetic: "/kʌp/" }
       ],
-      TEST: [] // Chưa có nội dung kiểm tra cụ thể
+      D1: [
+        { word: "DESK", meaning: "(cái bàn)", icon: "🪑", phonetic: "" },
+        { word: "DOG", meaning: "(con chó)", icon: "🐶", phonetic: "" },
+        { word: "DOLL", meaning: "(búp bê)", icon: "🧸", phonetic: "" },
+        { word: "DUCK", meaning: "(con vịt)", icon: "🦆", phonetic: "" }
+      ]
     };
 
     let vocabulary = levels.C1;
@@ -181,7 +212,8 @@
 
     function speakWord() {
       const utter = new SpeechSynthesisUtterance(vocabulary[index].word);
-      utter.lang = "en-US";
+      utter.voice = selectedVoice || null;
+      utter.lang = selectedVoice?.lang || "en-US";
       window.speechSynthesis.speak(utter);
     }
 
